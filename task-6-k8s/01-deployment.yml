@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-deployment
+  namespace: my-app-namespace
+  labels:
+    app: my-app
+spec:
+  replicas: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: hotel
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - name: my-app-container
+          image: my-app-image:1.0.0
+          ports:
+            - containerPort: 80
+          resources:
+            requests: # Потребностей мы не знаем, поэтому указываем наугад, но после тестов нужно будет отредактировать эти значения.
+              memory: "512Mi" 
+              cpu: "100m"
+            limits: # CPU limits не указываем, так как могут возникнуть избыточный троттлинг и задержки
+              memory: "512Mi"
+          # Мы не знаем что внутри приложения, поэтому проверяем не по httpGet, а по tcpSocket
+          livenessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 5
+          readinessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 5
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
